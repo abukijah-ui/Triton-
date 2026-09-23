@@ -157,7 +157,8 @@ fun TritonMainScreen(
                                 repository.sendMessage(prompt)
                             }
                         },
-                        isGenerating = isGenerating
+                        isGenerating = isGenerating,
+                        onSelectModel = { repository.setModel(it) }
                     )
                 } else {
                     TritonChatScreen(
@@ -181,7 +182,8 @@ fun TritonMainScreen(
                         },
                         onOpenArtifact = { artifact ->
                             repository.openArtifact(artifact)
-                        }
+                        },
+                        onSelectModel = { repository.setModel(it) }
                     )
                 }
 

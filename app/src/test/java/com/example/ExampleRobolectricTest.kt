@@ -6,6 +6,9 @@ import com.example.data.TritonRepository
 import com.example.model.LiveThinkingState
 import com.example.model.ThinkingPhase
 import com.example.model.TritonModel
+import com.example.ui.components.MarkdownBlock
+import com.example.ui.components.parseInlineMarkdown
+import com.example.ui.components.parseMarkdownBlocks
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
@@ -57,5 +60,65 @@ class ExampleRobolectricTest {
     assertTrue(state.isThinking)
     assertTrue(state.isExpanded)
     assertEquals(2.4, state.elapsedSeconds, 0.01)
+  }
+
+  @Test
+  fun `markdown parser accurately parses tables`() {
+    val markdown = """
+      | Metric | Triton 3.7 | Claude 3.7 |
+      | :--- | :---: | ---: |
+      | **Speed** | Instant | Fast |
+      | **Reasoning** | Hybrid | Extended |
+    """.trimIndent()
+
+    val blocks = parseMarkdownBlocks(markdown)
+    val tableBlock = blocks.filterIsInstance<MarkdownBlock.Table>().firstOrNull()
+    assertNotNull(tableBlock)
+    assertEquals(3, tableBlock!!.headers.size)
+    assertEquals("Metric", tableBlock.headers[0])
+    assertEquals("Triton 3.7", tableBlock.headers[1])
+    assertEquals("Claude 3.7", tableBlock.headers[2])
+    assertEquals(2, tableBlock.rows.size)
+    assertEquals("**Speed**", tableBlock.rows[0][0])
+    assertEquals("Instant", tableBlock.rows[0][1])
+  }
+
+  @Test
+  fun `markdown parser supports code blocks, lists, quotes, and task items`() {
+    val markdown = """
+      # Triton Intelligence
+      
+      > Regal AI system with cognitive depth.
+      
+      ---
+      
+      - [ ] Task 1
+      - [x] Task 2 Completed
+      - Bullet point A
+      1. Ordered step 1
+      
+      ```kotlin
+      val x = 42
+      ```
+    """.trimIndent()
+
+    val blocks = parseMarkdownBlocks(markdown)
+    assertTrue(blocks.any { it is MarkdownBlock.Header && it.text == "Triton Intelligence" })
+    assertTrue(blocks.any { it is MarkdownBlock.Blockquote })
+    assertTrue(blocks.any { it is MarkdownBlock.HorizontalRule })
+    assertTrue(blocks.any { it is MarkdownBlock.TaskItem && !it.isChecked })
+    assertTrue(blocks.any { it is MarkdownBlock.TaskItem && it.isChecked })
+    assertTrue(blocks.any { it is MarkdownBlock.BulletItem })
+    assertTrue(blocks.any { it is MarkdownBlock.NumberedItem })
+    assertTrue(blocks.any { it is MarkdownBlock.CodeBlock && it.language == "kotlin" })
+  }
+
+  @Test
+  fun `inline markdown correctly parses bold, code, and links`() {
+    val annotated = parseInlineMarkdown("Check **bold** and `code` and [Docs](https://example.com)")
+    val text = annotated.text
+    assertTrue(text.contains("bold"))
+    assertTrue(text.contains("code"))
+    assertTrue(text.contains("Docs"))
   }
 }

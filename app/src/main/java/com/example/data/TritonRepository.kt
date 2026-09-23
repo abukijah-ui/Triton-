@@ -658,7 +658,7 @@ The primary cryptographic distinction lies in the **trusted setup** and **underl
         _isGenerating.value = true
 
         val model = _selectedModel.value
-        val thinkEnabled = _isThinkingEnabled.value && model.supportsThinking
+        val thinkEnabled = true
 
         val startTime = System.currentTimeMillis()
         var thoughtDuration: Double? = null

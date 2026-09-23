@@ -9,6 +9,7 @@ import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -36,8 +37,11 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AttachFile
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Description
+import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.Psychology
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -57,6 +61,7 @@ import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -78,9 +83,10 @@ fun TritonComposer(
     onTextChanged: (String) -> Unit,
     onSendMessage: (String) -> Unit,
     isGenerating: Boolean,
-    isThinkingEnabled: Boolean,
-    onToggleThinking: () -> Unit,
+    isThinkingEnabled: Boolean = true,
+    onToggleThinking: (() -> Unit)? = null,
     selectedModel: TritonModel,
+    onSelectModel: ((TritonModel) -> Unit)? = null,
     placeholder: String = "How can Triton help you today?",
     modifier: Modifier = Modifier
 ) {
@@ -241,59 +247,85 @@ fun TritonComposer(
                         )
                     }
 
-                    // Claude 3.7 Thinking Mode Toggle Pill with Shimmering Gold
-                    if (selectedModel.supportsThinking) {
-                        val isThinkActive = isThinkingEnabled
-                        val infiniteTransition = rememberInfiniteTransition(label = "think_pulse")
-                        val pulseAlpha by infiniteTransition.animateFloat(
-                            initialValue = 0.35f,
-                            targetValue = 1.0f,
-                            animationSpec = infiniteRepeatable(
-                                animation = tween(1200, easing = FastOutSlowInEasing),
-                                repeatMode = RepeatMode.Reverse
-                            ),
-                            label = "pulse_alpha"
-                        )
-
+                    // Claude Model Selector Pill
+                    var showModelDropdown by remember { mutableStateOf(false) }
+                    Box {
                         Surface(
-                            onClick = onToggleThinking,
+                            onClick = { if (onSelectModel != null) showModelDropdown = true },
                             shape = RoundedCornerShape(16.dp),
-                            color = if (isThinkActive) GoldContainerLight.copy(alpha = 0.3f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-                            border = androidx.compose.foundation.BorderStroke(
-                                1.dp,
-                                if (isThinkActive) GoldPrimary else MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
-                            ),
-                            modifier = Modifier.testTag("thinking_mode_toggle")
+                            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.25f)),
+                            modifier = Modifier.testTag("composer_model_selector_pill")
                         ) {
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
+                                modifier = Modifier.padding(horizontal = 9.dp, vertical = 6.dp)
                             ) {
-                                if (isThinkActive) {
-                                    Box(
-                                        modifier = Modifier
-                                            .size(7.dp)
-                                            .clip(CircleShape)
-                                            .background(GoldPrimary.copy(alpha = pulseAlpha))
-                                    )
-                                    Spacer(modifier = Modifier.width(6.dp))
-                                }
-                                Icon(
-                                    imageVector = Icons.Default.Psychology,
-                                    contentDescription = "Extended Thinking",
-                                    tint = if (isThinkActive) GoldPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
-                                    modifier = Modifier.size(16.dp)
-                                )
-                                Spacer(modifier = Modifier.width(5.dp))
                                 Text(
-                                    text = if (isThinkActive) "Thinking ON" else "Thinking",
+                                    text = selectedModel.shortName,
                                     style = MaterialTheme.typography.labelMedium.copy(
                                         fontSize = 11.5.sp,
                                         fontFamily = JakartaFontFamily,
-                                        fontWeight = if (isThinkActive) androidx.compose.ui.text.font.FontWeight.SemiBold else androidx.compose.ui.text.font.FontWeight.Normal
+                                        fontWeight = FontWeight.Medium
                                     ),
-                                    color = if (isThinkActive) GoldPrimary else MaterialTheme.colorScheme.onSurfaceVariant
+                                    color = MaterialTheme.colorScheme.onSurface
                                 )
+                                if (onSelectModel != null) {
+                                    Spacer(modifier = Modifier.width(3.dp))
+                                    Icon(
+                                        imageVector = Icons.Default.KeyboardArrowDown,
+                                        contentDescription = "Change Model",
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        modifier = Modifier.size(14.dp)
+                                    )
+                                }
+                            }
+                        }
+
+                        if (onSelectModel != null) {
+                            DropdownMenu(
+                                expanded = showModelDropdown,
+                                onDismissRequest = { showModelDropdown = false },
+                                modifier = Modifier.background(MaterialTheme.colorScheme.surface)
+                            ) {
+                                TritonModel.values().forEach { model ->
+                                    DropdownMenuItem(
+                                        text = {
+                                            Column {
+                                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                                    Text(
+                                                        text = model.displayName,
+                                                        style = MaterialTheme.typography.bodyMedium.copy(
+                                                            fontWeight = if (model == selectedModel) FontWeight.Bold else FontWeight.Normal
+                                                        ),
+                                                        color = if (model == selectedModel) GoldPrimary else MaterialTheme.colorScheme.onSurface
+                                                    )
+                                                    Spacer(modifier = Modifier.width(6.dp))
+                                                    Surface(
+                                                        shape = RoundedCornerShape(4.dp),
+                                                        color = GoldPrimary.copy(alpha = 0.15f)
+                                                    ) {
+                                                        Text(
+                                                            text = model.tag,
+                                                            fontSize = 9.sp,
+                                                            color = GoldPrimary,
+                                                            modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp)
+                                                        )
+                                                    }
+                                                }
+                                                Text(
+                                                    text = model.description,
+                                                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
+                                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                )
+                                            }
+                                        },
+                                        onClick = {
+                                            onSelectModel(model)
+                                            showModelDropdown = false
+                                        }
+                                    )
+                                }
                             }
                         }
                     }

@@ -65,6 +65,7 @@ import com.example.ui.components.TritonComposer
 import com.example.ui.components.TritonLiveThinkingIndicator
 import com.example.ui.components.TritonMarkdownText
 import com.example.ui.components.TritonThinkingBlock
+import com.example.ui.components.artifact.TritonArtifactCard
 import com.example.ui.theme.CinzelFontFamily
 import com.example.ui.theme.GoldAccent
 import com.example.ui.theme.GoldAmber
@@ -87,6 +88,7 @@ fun TritonChatScreen(
     onToggleMessageThinking: (String) -> Unit,
     onSetMessageFeedback: (String, MessageFeedback) -> Unit,
     onOpenArtifact: (TritonArtifact) -> Unit,
+    onSelectModel: ((TritonModel) -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     var composerText by remember { mutableStateOf("") }
@@ -160,6 +162,7 @@ fun TritonChatScreen(
                 isThinkingEnabled = isThinkingEnabled,
                 onToggleThinking = onToggleThinking,
                 selectedModel = selectedModel,
+                onSelectModel = onSelectModel,
                 placeholder = "Reply to Triton..."
             )
         }
@@ -321,99 +324,6 @@ private fun AssistantMessageBubble(
                     contentDescription = "Thumbs down",
                     tint = if (message.feedback == MessageFeedback.THUMBS_DOWN) GoldAmber else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
                     modifier = Modifier.size(15.dp)
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun TritonArtifactCard(
-    artifact: TritonArtifact,
-    onClick: () -> Unit
-) {
-    val shimmerBrush = goldShimmerBrush()
-
-    Surface(
-        onClick = onClick,
-        shape = RoundedCornerShape(14.dp),
-        color = MaterialTheme.colorScheme.surface,
-        border = androidx.compose.foundation.BorderStroke(1.2.dp, shimmerBrush),
-        modifier = Modifier
-            .fillMaxWidth()
-            .testTag("artifact_card_${artifact.id}")
-    ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(14.dp)
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(40.dp)
-                    .clip(RoundedCornerShape(10.dp))
-                    .background(GoldPrimary.copy(alpha = 0.15f))
-                    .border(1.dp, GoldPrimary, RoundedCornerShape(10.dp)),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Code,
-                    contentDescription = null,
-                    tint = GoldAccent,
-                    modifier = Modifier.size(20.dp)
-                )
-            }
-
-            Spacer(modifier = Modifier.width(14.dp))
-
-            Column(modifier = Modifier.weight(1f)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        text = "TRITON ARTIFACT",
-                        style = MaterialTheme.typography.labelSmall.copy(
-                            fontFamily = JakartaFontFamily,
-                            fontSize = 10.sp,
-                            letterSpacing = 0.6.sp
-                        ),
-                        color = GoldPrimary
-                    )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(
-                        text = "•  ${artifact.language.uppercase()}",
-                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-                Spacer(modifier = Modifier.height(2.dp))
-                Text(
-                    text = artifact.title,
-                    style = MaterialTheme.typography.titleSmall.copy(
-                        fontFamily = CinzelFontFamily,
-                        fontSize = 14.sp
-                    ),
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-                Text(
-                    text = artifact.summary,
-                    style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.5.sp),
-                    maxLines = 1,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-
-            Box(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(GoldPrimary.copy(alpha = 0.12f))
-                    .padding(horizontal = 10.dp, vertical = 6.dp)
-            ) {
-                Text(
-                    text = "View",
-                    style = MaterialTheme.typography.labelSmall.copy(
-                        fontFamily = JakartaFontFamily,
-                        fontSize = 11.sp,
-                        fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold
-                    ),
-                    color = GoldAccent
                 )
             }
         }
