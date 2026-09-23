@@ -1,0 +1,6 @@
+{
+  "name": "Triton",
+  "description": "A regal AI assistant interface inspired by Claude, draped in shimmering hues of gold and bespoke typography with thinking mode, artifacts, and multi-model routing.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
