@@ -49,6 +49,7 @@ fun TritonMainScreen(
     val isThinkingEnabled by repository.isThinkingEnabled.collectAsState()
     val activeArtifact by repository.activeArtifact.collectAsState()
     val isGenerating by repository.isGenerating.collectAsState()
+    val liveThinkingState by repository.liveThinkingState.collectAsState()
     val projects by repository.projects.collectAsState()
     val currentUser by repository.currentUser.collectAsState()
 
@@ -170,6 +171,8 @@ fun TritonMainScreen(
                             }
                         },
                         isGenerating = isGenerating,
+                        liveThinkingState = liveThinkingState,
+                        onToggleLiveThinkingExpanded = { repository.toggleLiveThinkingExpanded() },
                         onToggleMessageThinking = { msgId ->
                             repository.toggleMessageThinking(msgId)
                         },

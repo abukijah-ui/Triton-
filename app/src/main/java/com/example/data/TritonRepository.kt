@@ -11,9 +11,11 @@ import com.example.data.local.UserEntity
 import com.example.model.ArtifactType
 import com.example.model.ChatMessage
 import com.example.model.ChatSession
+import com.example.model.LiveThinkingState
 import com.example.model.MessageFeedback
 import com.example.model.PromptSuggestion
 import com.example.model.Role
+import com.example.model.ThinkingPhase
 import com.example.model.TritonArtifact
 import com.example.model.TritonModel
 import com.example.model.TritonProject
@@ -21,6 +23,7 @@ import com.example.model.UserProfile
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -59,6 +62,9 @@ class TritonRepository(private val context: Context? = null) {
 
     private val _isGenerating = MutableStateFlow(false)
     val isGenerating: StateFlow<Boolean> = _isGenerating.asStateFlow()
+
+    private val _liveThinkingState = MutableStateFlow<LiveThinkingState?>(null)
+    val liveThinkingState: StateFlow<LiveThinkingState?> = _liveThinkingState.asStateFlow()
 
     private val _projects = MutableStateFlow<List<TritonProject>>(emptyList())
     val projects: StateFlow<List<TritonProject>> = _projects.asStateFlow()
@@ -478,6 +484,11 @@ The primary cryptographic distinction lies in the **trusted setup** and **underl
         _isThinkingEnabled.value = enabled
     }
 
+    fun toggleLiveThinkingExpanded() {
+        val current = _liveThinkingState.value ?: return
+        _liveThinkingState.value = current.copy(isExpanded = !current.isExpanded)
+    }
+
     fun openArtifact(artifact: TritonArtifact) {
         _activeArtifact.value = artifact
     }
@@ -649,17 +660,94 @@ The primary cryptographic distinction lies in the **trusted setup** and **underl
         val model = _selectedModel.value
         val thinkEnabled = _isThinkingEnabled.value && model.supportsThinking
 
-        val thoughtDuration = if (thinkEnabled) (2.5 + Math.random() * 2.0).let { Math.round(it * 10.0) / 10.0 } else null
-        val thinkingText = if (thinkEnabled) generateThinkingProcess(content) else null
+        val startTime = System.currentTimeMillis()
+        var thoughtDuration: Double? = null
+        var thinkingText: String? = null
 
         if (thinkEnabled) {
-            delay(1200)
+            // Initialize live visual thinking state
+            _liveThinkingState.value = LiveThinkingState(
+                isThinking = true,
+                elapsedSeconds = 0.0,
+                phase = ThinkingPhase.DECONSTRUCTING,
+                activeThoughtSummary = "Deconstructing user intent...",
+                thoughtsStream = "",
+                completedSteps = emptyList(),
+                isExpanded = true,
+                progressFraction = 0.15f
+            )
+
+            // Start response generation asynchronously
+            val responseAsync = scope.async {
+                generateTritonResponse(content, model)
+            }
+
+            // Continuous background timer updating elapsedSeconds
+            val timerJob = scope.launch {
+                while (_isGenerating.value) {
+                    delay(100)
+                    val elapsed = (System.currentTimeMillis() - startTime) / 1000.0
+                    val rounded = Math.round(elapsed * 10.0) / 10.0
+                    _liveThinkingState.value = _liveThinkingState.value?.copy(elapsedSeconds = rounded)
+                }
+            }
+
+            // Stream through 4 cognitive phases
+            val phases = listOf(
+                ThinkingPhase.DECONSTRUCTING,
+                ThinkingPhase.EXPLORING,
+                ThinkingPhase.SYNTHESIZING,
+                ThinkingPhase.VERIFYING
+            )
+
+            for (phase in phases) {
+                val steps = getPhaseSteps(phase, content)
+                for (step in steps) {
+                    val current = _liveThinkingState.value
+                    if (current != null) {
+                        _liveThinkingState.value = current.copy(
+                            phase = phase,
+                            activeThoughtSummary = step,
+                            thoughtsStream = step
+                        )
+                    }
+                    delay(380)
+                }
+                val current = _liveThinkingState.value
+                if (current != null) {
+                    val updatedCompleted = current.completedSteps + steps.last()
+                    _liveThinkingState.value = current.copy(
+                        completedSteps = updatedCompleted,
+                        thoughtsStream = ""
+                    )
+                }
+            }
+
+            val responseTuple = responseAsync.await()
+            val totalElapsed = (System.currentTimeMillis() - startTime) / 1000.0
+            thoughtDuration = Math.round(totalElapsed * 10.0) / 10.0
+            thinkingText = generateThinkingProcess(content, thoughtDuration)
+
+            timerJob.cancel()
+            _liveThinkingState.value = null
+
+            finalizeAssistantResponse(sessionId, content, model, responseTuple, thinkingText, thoughtDuration, updatedWithUser)
         } else {
-            delay(500)
+            delay(600)
+            val responseTuple = generateTritonResponse(content, model)
+            finalizeAssistantResponse(sessionId, content, model, responseTuple, null, null, updatedWithUser)
         }
+    }
 
-        val responseTuple = generateTritonResponse(content, model)
-
+    private fun finalizeAssistantResponse(
+        sessionId: String,
+        userContent: String,
+        model: TritonModel,
+        responseTuple: ResponseTuple,
+        thinkingText: String?,
+        thoughtDuration: Double?,
+        updatedWithUser: List<ChatMessage>
+    ) {
         val assistantMessage = ChatMessage(
             id = UUID.randomUUID().toString(),
             sessionId = sessionId,
@@ -708,12 +796,57 @@ The primary cryptographic distinction lies in the **trusted setup** and **underl
         }
     }
 
-    private fun generateThinkingProcess(prompt: String): String {
+    private fun getPhaseSteps(phase: ThinkingPhase, prompt: String): List<String> {
+        val snippet = prompt.take(34).replace("\n", " ") + if (prompt.length > 34) "..." else ""
+        val isCode = prompt.contains("code", ignoreCase = true) || prompt.contains("shader", ignoreCase = true) || prompt.contains("function", ignoreCase = true) || prompt.contains("kotlin", ignoreCase = true)
+        val isMath = prompt.contains("math", ignoreCase = true) || prompt.contains("calculate", ignoreCase = true) || prompt.contains("algorithm", ignoreCase = true)
+
+        return when (phase) {
+            ThinkingPhase.DECONSTRUCTING -> listOf(
+                "Analyzing prompt: \"$snippet\"",
+                "Extracting technical specifications, invariants, and target objectives.",
+                if (isCode) "Auditing execution runtime parameters, memory constraints, and type constraints."
+                else if (isMath) "Formalizing computational equations and numerical precision boundaries."
+                else "Structuring inquiry scope and semantic domain requirements."
+            )
+            ThinkingPhase.EXPLORING -> listOf(
+                "Evaluating algorithmic candidate paradigms and asymptotic bounds.",
+                if (isCode) "Comparing zero-allocation patterns against expressive high-level abstractions."
+                else "Examining historical frameworks, core principles, and edge conditions.",
+                "Selecting golden-standard architectural formulation."
+            )
+            ThinkingPhase.SYNTHESIZING -> listOf(
+                "Synthesizing structured response with clear typographic hierarchy.",
+                if (isCode) "Drafting modular, self-contained implementation with GLSL/Kotlin idioms."
+                else "Polishing analytical exposition with authoritative clarity.",
+                "Ensuring code blocks, headers, and highlights are calibrated."
+            )
+            ThinkingPhase.VERIFYING -> listOf(
+                "Performing internal consistency check against initial user constraints.",
+                "Validating syntax correctness, null-safety, and exception resilience.",
+                "Finalizing response stream."
+            )
+        }
+    }
+
+    private fun generateThinkingProcess(prompt: String, durationSec: Double? = null): String {
+        val durationStr = if (durationSec != null) "${durationSec}s" else "3.2s"
         return buildString {
-            append("1. **Deconstruct User Intent**: Analyzed prompt \"$prompt\" for fundamental technical requirements and structural boundaries.\n")
-            append("2. **Evaluate Architecture**: Checked constraint space for algorithmic elegance, memory bounds, and computational efficiency.\n")
-            append("3. **Formulate Shimmering Synthetics**: Selected bespoke mathematical abstractions and gold-standard implementation patterns.\n")
-            append("4. **Synthesize Artifact & Verification**: Verified code syntax and state consistency before output generation.")
+            append("### 1. Intent Deconstruction & Boundary Analysis\n")
+            append("- Analyzed prompt: \"$prompt\"\n")
+            append("- Isolated essential functional deliverables and domain invariants.\n\n")
+
+            append("### 2. Hypothesis & Architectural Exploration\n")
+            append("- Evaluated algorithmic complexity and structural trade-offs.\n")
+            append("- Selected bespoke mathematical abstractions and gold-standard implementation patterns.\n\n")
+
+            append("### 3. Implementation Synthesis\n")
+            append("- Constructed idiomatic, production-ready solution with clear commentary.\n")
+            append("- Verified modularity, aesthetic presentation, and responsiveness.\n\n")
+
+            append("### 4. Verification & Consistency Audit\n")
+            append("- Audited syntax, null-safety boundaries, and safety constraints.\n")
+            append("- Cognitive verification successfully concluded in $durationStr.")
         }
     }
 

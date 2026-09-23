@@ -56,11 +56,13 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.model.ChatMessage
+import com.example.model.LiveThinkingState
 import com.example.model.MessageFeedback
 import com.example.model.Role
 import com.example.model.TritonArtifact
 import com.example.model.TritonModel
 import com.example.ui.components.TritonComposer
+import com.example.ui.components.TritonLiveThinkingIndicator
 import com.example.ui.components.TritonMarkdownText
 import com.example.ui.components.TritonThinkingBlock
 import com.example.ui.theme.CinzelFontFamily
@@ -80,6 +82,8 @@ fun TritonChatScreen(
     onToggleThinking: () -> Unit,
     onSendMessage: (String) -> Unit,
     isGenerating: Boolean,
+    liveThinkingState: LiveThinkingState? = null,
+    onToggleLiveThinkingExpanded: () -> Unit = {},
     onToggleMessageThinking: (String) -> Unit,
     onSetMessageFeedback: (String, MessageFeedback) -> Unit,
     onOpenArtifact: (TritonArtifact) -> Unit,
@@ -127,7 +131,10 @@ fun TritonChatScreen(
 
             if (isGenerating) {
                 item {
-                    GeneratingIndicator()
+                    TritonLiveThinkingIndicator(
+                        thinkingState = liveThinkingState,
+                        onToggleExpanded = onToggleLiveThinkingExpanded
+                    )
                     Spacer(modifier = Modifier.height(20.dp))
                 }
             }
@@ -410,41 +417,5 @@ private fun TritonArtifactCard(
                 )
             }
         }
-    }
-}
-
-@Composable
-private fun GeneratingIndicator() {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 8.dp)
-    ) {
-        Box(
-            modifier = Modifier
-                .size(24.dp)
-                .clip(CircleShape)
-                .background(GoldPrimary.copy(alpha = 0.15f))
-                .border(1.dp, GoldPrimary, CircleShape),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(text = "🔱", fontSize = 12.sp)
-        }
-        Spacer(modifier = Modifier.width(10.dp))
-        CircularProgressIndicator(
-            modifier = Modifier.size(16.dp),
-            color = GoldPrimary,
-            strokeWidth = 2.dp
-        )
-        Spacer(modifier = Modifier.width(8.dp))
-        Text(
-            text = "Triton is thinking...",
-            style = MaterialTheme.typography.bodySmall.copy(
-                fontFamily = JakartaFontFamily,
-                fontSize = 12.sp
-            ),
-            color = GoldPrimary
-        )
     }
 }

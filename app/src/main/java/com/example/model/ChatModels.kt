@@ -122,3 +122,41 @@ data class UserProfile(
     val createdAt: Long = System.currentTimeMillis()
 )
 
+enum class ThinkingPhase(
+    val label: String,
+    val badge: String,
+    val description: String
+) {
+    DECONSTRUCTING(
+        label = "Intent Deconstruction",
+        badge = "Phase 1/4",
+        description = "Analyzing prompt context, boundary constraints & technical criteria"
+    ),
+    EXPLORING(
+        label = "Hypothesis & Architecture",
+        badge = "Phase 2/4",
+        description = "Evaluating algorithmic paradigms, data structures & edge conditions"
+    ),
+    SYNTHESIZING(
+        label = "Synthesizing Implementation",
+        badge = "Phase 3/4",
+        description = "Drafting high-performance solution with golden standard patterns"
+    ),
+    VERIFYING(
+        label = "Logic & Consistency Verification",
+        badge = "Phase 4/4",
+        description = "Validating syntactic correctness, safety constraints & clarity"
+    )
+}
+
+data class LiveThinkingState(
+    val isThinking: Boolean = true,
+    val elapsedSeconds: Double = 0.0,
+    val phase: ThinkingPhase = ThinkingPhase.DECONSTRUCTING,
+    val activeThoughtSummary: String = "Deconstructing user intent...",
+    val thoughtsStream: String = "",
+    val completedSteps: List<String> = emptyList(),
+    val isExpanded: Boolean = true,
+    val progressFraction: Float = 0.15f
+)
+

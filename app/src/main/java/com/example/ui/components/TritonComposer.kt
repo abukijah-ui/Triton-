@@ -1,6 +1,12 @@
 package com.example.ui.components
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
@@ -238,13 +244,24 @@ fun TritonComposer(
                     // Claude 3.7 Thinking Mode Toggle Pill with Shimmering Gold
                     if (selectedModel.supportsThinking) {
                         val isThinkActive = isThinkingEnabled
+                        val infiniteTransition = rememberInfiniteTransition(label = "think_pulse")
+                        val pulseAlpha by infiniteTransition.animateFloat(
+                            initialValue = 0.35f,
+                            targetValue = 1.0f,
+                            animationSpec = infiniteRepeatable(
+                                animation = tween(1200, easing = FastOutSlowInEasing),
+                                repeatMode = RepeatMode.Reverse
+                            ),
+                            label = "pulse_alpha"
+                        )
+
                         Surface(
                             onClick = onToggleThinking,
                             shape = RoundedCornerShape(16.dp),
-                            color = if (isThinkActive) GoldContainerLight.copy(alpha = 0.25f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                            color = if (isThinkActive) GoldContainerLight.copy(alpha = 0.3f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
                             border = androidx.compose.foundation.BorderStroke(
                                 1.dp,
-                                if (isThinkActive) GoldPrimary.copy(alpha = 0.7f) else Color.Transparent
+                                if (isThinkActive) GoldPrimary else MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
                             ),
                             modifier = Modifier.testTag("thinking_mode_toggle")
                         ) {
@@ -252,6 +269,15 @@ fun TritonComposer(
                                 verticalAlignment = Alignment.CenterVertically,
                                 modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
                             ) {
+                                if (isThinkActive) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(7.dp)
+                                            .clip(CircleShape)
+                                            .background(GoldPrimary.copy(alpha = pulseAlpha))
+                                    )
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                }
                                 Icon(
                                     imageVector = Icons.Default.Psychology,
                                     contentDescription = "Extended Thinking",
@@ -260,10 +286,11 @@ fun TritonComposer(
                                 )
                                 Spacer(modifier = Modifier.width(5.dp))
                                 Text(
-                                    text = "Think",
+                                    text = if (isThinkActive) "Thinking ON" else "Thinking",
                                     style = MaterialTheme.typography.labelMedium.copy(
-                                        fontSize = 12.sp,
-                                        fontFamily = JakartaFontFamily
+                                        fontSize = 11.5.sp,
+                                        fontFamily = JakartaFontFamily,
+                                        fontWeight = if (isThinkActive) androidx.compose.ui.text.font.FontWeight.SemiBold else androidx.compose.ui.text.font.FontWeight.Normal
                                     ),
                                     color = if (isThinkActive) GoldPrimary else MaterialTheme.colorScheme.onSurfaceVariant
                                 )
