@@ -113,7 +113,7 @@ class TritonRepository(private val context: Context? = null) {
                 description = "Deep-sea underwater robotics telemetry & neural navigation",
                 instructions = "Respond with high mathematical rigor and nautical terminology.",
                 fileCount = 6,
-                iconEmoji = "🔱"
+                iconGlyph = "trident"
             ),
             TritonProject(
                 id = "proj-2",
@@ -121,7 +121,7 @@ class TritonRepository(private val context: Context? = null) {
                 description = "Jetpack Compose design tokens, golden palettes, and typography",
                 instructions = "Always output clean Kotlin Compose code adhering to M3 standards.",
                 fileCount = 14,
-                iconEmoji = "✨"
+                iconGlyph = "sparkle"
             )
         )
     }

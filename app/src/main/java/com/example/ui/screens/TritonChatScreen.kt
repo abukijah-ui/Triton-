@@ -232,7 +232,10 @@ private fun AssistantMessageBubble(
                     .border(1.dp, GoldPrimary, CircleShape),
                 contentAlignment = Alignment.Center
             ) {
-                Text(text = "🔱", fontSize = 12.sp)
+                com.example.ui.components.TritonTridentGlyph(
+                    size = 13.dp,
+                    tint = GoldPrimary
+                )
             }
             Spacer(modifier = Modifier.width(8.dp))
             Text(

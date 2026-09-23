@@ -149,6 +149,7 @@ fun TritonMainScreen(
                         onToggleThinking = { repository.toggleThinking() },
                         promptSuggestions = repository.promptSuggestions,
                         recentSessions = sessions,
+                        currentUser = currentUser,
                         onSelectSession = { sessionId ->
                             repository.selectSession(sessionId)
                         },

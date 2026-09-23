@@ -103,7 +103,7 @@ data class TritonProject(
     val description: String,
     val instructions: String,
     val fileCount: Int,
-    val iconEmoji: String = "⚡"
+    val iconGlyph: String = "trident"
 )
 
 data class PromptSuggestion(

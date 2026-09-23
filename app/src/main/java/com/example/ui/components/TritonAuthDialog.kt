@@ -125,7 +125,7 @@ fun TritonAuthDialog(
                                 .border(1.dp, GoldPrimary, RoundedCornerShape(8.dp)),
                             contentAlignment = Alignment.Center
                         ) {
-                            Text(text = "🔱", fontSize = 18.sp)
+                            TritonTridentGlyph(size = 18.dp, tint = GoldPrimary)
                         }
                         Spacer(modifier = Modifier.width(10.dp))
                         Column {

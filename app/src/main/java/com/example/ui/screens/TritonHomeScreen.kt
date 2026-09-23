@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -23,17 +24,17 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
-import androidx.compose.material.icons.automirrored.filled.FormatListBulleted
 import androidx.compose.material.icons.filled.Code
-import androidx.compose.material.icons.filled.DataObject
+import androidx.compose.material.icons.filled.EditNote
 import androidx.compose.material.icons.filled.History
-import androidx.compose.material.icons.filled.Psychology
-import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material.icons.filled.Lightbulb
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -45,8 +46,8 @@ import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.rotate
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -54,10 +55,13 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.data.InternetTimeService
 import com.example.model.ChatSession
 import com.example.model.PromptSuggestion
 import com.example.model.TritonModel
+import com.example.model.UserProfile
 import com.example.ui.components.TritonComposer
+import com.example.ui.components.TritonTridentGlyph
 import com.example.ui.theme.CinzelFontFamily
 import com.example.ui.theme.GoldAccent
 import com.example.ui.theme.GoldAmber
@@ -65,10 +69,14 @@ import com.example.ui.theme.GoldHighlight
 import com.example.ui.theme.GoldPrimary
 import com.example.ui.theme.JakartaFontFamily
 import com.example.ui.theme.LocalIsDarkTheme
-import java.util.Calendar
 
 /**
- * Claude's signature Welcome / New Chat Screen, rendered with Triton's shimmering gold palette.
+ * Claude-inspired Welcome & New Chat Screen.
+ *
+ * Clean, focused layout:
+ * - Real-time internet-synced time-of-day greeting (background verification without visual badge).
+ * - Focused 4-card starter grid (Write an essay, Do some research, Create some code, Brainstorm ideas).
+ * - Bottom-docked prompt input box.
  */
 @Composable
 fun TritonHomeScreen(
@@ -80,145 +88,103 @@ fun TritonHomeScreen(
     onSelectSession: (String) -> Unit,
     onSendMessage: (String) -> Unit,
     isGenerating: Boolean,
+    currentUser: UserProfile? = null,
     onSelectModel: ((TritonModel) -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     var inputText by remember { mutableStateOf("") }
-    val greeting = remember { getGreeting() }
     val isDark = LocalIsDarkTheme.current
+    val scrollState = rememberScrollState()
+
+    // Internet-derived time state (defaults to local device time immediately, then silently updates from internet)
+    var timeInfo by remember { mutableStateOf(InternetTimeService.getLocalTimeInfo()) }
+
+    LaunchedEffect(Unit) {
+        try {
+            val internetInfo = InternetTimeService.fetchInternetTimeInfo()
+            timeInfo = internetInfo
+        } catch (_: Exception) {
+            // Graceful silent fallback to local device time
+        }
+    }
+
+    // Fixed 4 signature Claude starter templates
+    val starterTemplates = remember { getClaudeTemplates() }
+
+    val greetingName = currentUser?.displayName?.takeIf { it.isNotBlank() } ?: "Voyager"
 
     Column(
         modifier = modifier
             .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = 20.dp)
-            .testTag("triton_home_screen"),
-        horizontalAlignment = Alignment.CenterHorizontally
+            .imePadding()
+            .testTag("triton_home_screen")
     ) {
-        Spacer(modifier = Modifier.height(32.dp))
-
-        // Claude Hallmark: Radiant Asterisk Logo + Editorial Greeting
+        // Scrollable Top & Center Content
         Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.padding(bottom = 26.dp)
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f)
+                .verticalScroll(scrollState)
+                .padding(horizontal = 20.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            Spacer(modifier = Modifier.height(28.dp))
+
+            // Claude Asterisk Radiant Starburst Emblem
             ClaudeAsterisk(
-                size = 54.dp,
+                size = 52.dp,
                 modifier = Modifier.testTag("claude_asterisk_logo")
             )
 
             Spacer(modifier = Modifier.height(18.dp))
 
+            // Time-of-Day Greeting (background-verified)
             Text(
-                text = "$greeting, Voyager",
+                text = "${timeInfo.greeting}, $greetingName",
                 style = MaterialTheme.typography.displaySmall.copy(
                     fontFamily = CinzelFontFamily,
                     fontSize = 28.sp,
                     fontWeight = FontWeight.Bold,
-                    letterSpacing = 0.5.sp
+                    letterSpacing = 0.2.sp
                 ),
                 color = MaterialTheme.colorScheme.onSurface,
                 textAlign = TextAlign.Center
             )
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(6.dp))
 
             Text(
-                text = "How can Triton assist you today?",
+                text = "How can Triton help you today?",
                 style = MaterialTheme.typography.bodyLarge.copy(
                     fontFamily = JakartaFontFamily,
                     fontSize = 15.sp,
-                    letterSpacing = 0.2.sp
+                    letterSpacing = 0.15.sp
                 ),
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center
             )
-        }
 
-        // Claude's Landmark Central Elevated Composer Box
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .widthIn(max = 680.dp)
-        ) {
-            TritonComposer(
-                text = inputText,
-                onTextChanged = { inputText = it },
-                onSendMessage = {
-                    onSendMessage(it)
-                    inputText = ""
-                },
-                isGenerating = isGenerating,
-                isThinkingEnabled = isThinkingEnabled,
-                onToggleThinking = onToggleThinking,
-                selectedModel = selectedModel,
-                onSelectModel = onSelectModel,
-                placeholder = "Reply to Triton or start a new task..."
-            )
-        }
+            Spacer(modifier = Modifier.height(26.dp))
 
-        Spacer(modifier = Modifier.height(28.dp))
-
-        // Claude's Action / Prompt Starters (2x2 Grid)
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .widthIn(max = 680.dp)
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.padding(bottom = 12.dp)
+            // 4 Starter Cards (2x2 Grid)
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .widthIn(max = 680.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                Text(
-                    text = "EXPLORE CAPABILITIES",
-                    style = MaterialTheme.typography.labelSmall.copy(
-                        fontFamily = CinzelFontFamily,
-                        letterSpacing = 1.2.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        fontSize = 11.sp
-                    ),
-                    color = GoldPrimary
-                )
-            }
-
-            // High-fidelity Claude Starter Cards
-            val starterPrompts = listOf(
-                ClaudeStarter(
-                    icon = Icons.Default.Code,
-                    title = "Code GLSL Shader",
-                    description = "Synthesize an auric particle wave artifact",
-                    prompt = "Write a high-performance GLSL shader for an interactive golden shimmering particle wave, and compile it as an artifact."
-                ),
-                ClaudeStarter(
-                    icon = Icons.Default.DataObject,
-                    title = "Synthesize Comparative Table",
-                    description = "Evaluate Triton vs Claude compute metrics",
-                    prompt = "Generate a comprehensive comparative markdown table analyzing Triton 3.7 Sonnet versus Claude 3.7 Sonnet, including reasoning modes, artifact support, and benchmark metrics."
-                ),
-                ClaudeStarter(
-                    icon = Icons.Default.Psychology,
-                    title = "Deep Reasoning Pipeline",
-                    description = "Deconstruct test-time compute & thinking phases",
-                    prompt = "Explain how test-time compute scaling and extended thinking pipelines work in modern AI architectures like Claude and Triton."
-                ),
-                ClaudeStarter(
-                    icon = Icons.AutoMirrored.Filled.FormatListBulleted,
-                    title = "Draft Executive Strategy",
-                    description = "Structured roadmap with milestones & checklists",
-                    prompt = "Draft an executive strategic roadmap for deploying a premier AI intelligence platform, formatted with milestones, checklists, and key invariants."
-                )
-            )
-
-            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                starterPrompts.chunked(2).forEach { rowStarters ->
+                starterTemplates.chunked(2).forEach { rowTemplates ->
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
-                        rowStarters.forEach { starter ->
-                            ClaudeStarterCard(
-                                starter = starter,
-                                onClick = { onSendMessage(starter.prompt) },
+                        rowTemplates.forEach { template ->
+                            ClaudeTemplateCard(
+                                template = template,
+                                onSelect = {
+                                    // Populate input box so user can customize or send
+                                    inputText = template.prompt
+                                },
                                 isDark = isDark,
                                 modifier = Modifier.weight(1f)
                             )
@@ -226,129 +192,327 @@ fun TritonHomeScreen(
                     }
                 }
             }
-        }
 
-        // Claude's Recent Chats Drawer / Quick Access
-        if (recentSessions.isNotEmpty()) {
-            Spacer(modifier = Modifier.height(28.dp))
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .widthIn(max = 680.dp)
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.padding(bottom = 10.dp)
+            // Recent Conversations Section (if any)
+            if (recentSessions.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(26.dp))
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .widthIn(max = 680.dp)
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.History,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(15.dp)
-                    )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(
-                        text = "RECENT CONVERSATIONS",
-                        style = MaterialTheme.typography.labelSmall.copy(
-                            fontFamily = CinzelFontFamily,
-                            letterSpacing = 1.1.sp,
-                            fontSize = 11.sp
-                        ),
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-
-                recentSessions.take(3).forEach { session ->
-                    Surface(
-                        onClick = { onSelectSession(session.id) },
-                        shape = RoundedCornerShape(12.dp),
-                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = if (isDark) 0.3f else 0.45f),
-                        border = BorderStroke(
-                            0.8.dp,
-                            MaterialTheme.colorScheme.outline.copy(alpha = if (isDark) 0.25f else 0.35f)
-                        ),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 4.dp)
-                            .testTag("recent_session_${session.id}")
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.padding(bottom = 10.dp)
                     ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp)
+                        Icon(
+                            imageVector = Icons.Default.History,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(15.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = "RECENT CONVERSATIONS",
+                            style = MaterialTheme.typography.labelSmall.copy(
+                                fontFamily = CinzelFontFamily,
+                                letterSpacing = 1.1.sp,
+                                fontSize = 11.sp
+                            ),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+
+                    recentSessions.take(3).forEach { session ->
+                        Surface(
+                            onClick = { onSelectSession(session.id) },
+                            shape = RoundedCornerShape(12.dp),
+                            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = if (isDark) 0.3f else 0.45f),
+                            border = BorderStroke(
+                                0.8.dp,
+                                MaterialTheme.colorScheme.outline.copy(alpha = if (isDark) 0.25f else 0.35f)
+                            ),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 3.dp)
+                                .testTag("recent_session_${session.id}")
                         ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(30.dp)
-                                    .clip(CircleShape)
-                                    .background(GoldPrimary.copy(alpha = 0.12f)),
-                                contentAlignment = Alignment.Center
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.padding(horizontal = 14.dp, vertical = 9.dp)
                             ) {
-                                Text(
-                                    text = "🔱",
-                                    fontSize = 13.sp
-                                )
-                            }
+                                Box(
+                                    modifier = Modifier
+                                        .size(28.dp)
+                                        .clip(CircleShape)
+                                        .background(GoldPrimary.copy(alpha = 0.12f)),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    TritonTridentGlyph(
+                                        size = 14.dp,
+                                        tint = GoldPrimary
+                                    )
+                                }
 
-                            Spacer(modifier = Modifier.width(12.dp))
+                                Spacer(modifier = Modifier.width(12.dp))
 
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    text = session.title,
-                                    style = MaterialTheme.typography.bodyMedium.copy(
-                                        fontFamily = JakartaFontFamily,
-                                        fontWeight = FontWeight.Medium,
-                                        fontSize = 13.5.sp
-                                    ),
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis,
-                                    color = MaterialTheme.colorScheme.onSurface
-                                )
-                                Text(
-                                    text = session.previewSnippet.ifBlank { "Conversation with ${session.model.displayName}" },
-                                    style = MaterialTheme.typography.bodySmall.copy(
-                                        fontSize = 11.5.sp
-                                    ),
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = session.title,
+                                        style = MaterialTheme.typography.bodyMedium.copy(
+                                            fontFamily = JakartaFontFamily,
+                                            fontWeight = FontWeight.Medium,
+                                            fontSize = 13.5.sp
+                                        ),
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    )
+                                    Text(
+                                        text = session.previewSnippet.ifBlank { "Conversation with ${session.model.displayName}" },
+                                        style = MaterialTheme.typography.bodySmall.copy(
+                                            fontSize = 11.5.sp
+                                        ),
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
 
-                            Spacer(modifier = Modifier.width(8.dp))
+                                Spacer(modifier = Modifier.width(8.dp))
 
-                            Surface(
-                                shape = RoundedCornerShape(6.dp),
-                                color = GoldPrimary.copy(alpha = 0.12f)
-                            ) {
-                                Text(
-                                    text = session.model.shortName,
-                                    style = MaterialTheme.typography.labelSmall.copy(
-                                        fontSize = 10.sp,
-                                        fontWeight = FontWeight.Medium
-                                    ),
-                                    color = GoldPrimary,
-                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                                )
+                                Surface(
+                                    shape = RoundedCornerShape(6.dp),
+                                    color = GoldPrimary.copy(alpha = 0.12f)
+                                ) {
+                                    Text(
+                                        text = session.model.shortName,
+                                        style = MaterialTheme.typography.labelSmall.copy(
+                                            fontSize = 10.sp,
+                                            fontWeight = FontWeight.Medium
+                                        ),
+                                        color = GoldPrimary,
+                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                    )
+                                }
                             }
                         }
                     }
                 }
             }
+
+            // Footer disclaimer
+            Spacer(modifier = Modifier.height(24.dp))
+            Text(
+                text = "Triton 3.7 Sonnet · Aureate Intelligence · AI responses may require verification.",
+                style = MaterialTheme.typography.bodySmall.copy(
+                    fontFamily = JakartaFontFamily,
+                    fontSize = 11.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                ),
+                textAlign = TextAlign.Center
+            )
+            Spacer(modifier = Modifier.height(16.dp))
         }
 
-        // Claude Hallmark Footer Disclaimer
-        Spacer(modifier = Modifier.height(36.dp))
-        Text(
-            text = "Triton 3.7 Sonnet · Aureate Intelligence · AI responses may require verification.",
-            style = MaterialTheme.typography.bodySmall.copy(
-                fontFamily = JakartaFontFamily,
-                fontSize = 11.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
-            ),
-            textAlign = TextAlign.Center
-        )
-        Spacer(modifier = Modifier.height(32.dp))
+        // Bottom-Anchored Prompt Input Box (Claude-style docked bottom composer)
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(MaterialTheme.colorScheme.surface)
+                .border(
+                    BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.15f)),
+                    RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)
+                )
+                .padding(horizontal = 16.dp, vertical = 10.dp)
+                .testTag("home_bottom_composer_container"),
+            contentAlignment = Alignment.Center
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .widthIn(max = 680.dp)
+            ) {
+                TritonComposer(
+                    text = inputText,
+                    onTextChanged = { inputText = it },
+                    onSendMessage = {
+                        onSendMessage(it)
+                        inputText = ""
+                    },
+                    isGenerating = isGenerating,
+                    isThinkingEnabled = isThinkingEnabled,
+                    onToggleThinking = onToggleThinking,
+                    selectedModel = selectedModel,
+                    onSelectModel = onSelectModel,
+                    placeholder = "How can Triton help you today?"
+                )
+            }
+        }
     }
+}
+
+data class ClaudeTemplate(
+    val id: String,
+    val icon: ImageVector,
+    val title: String,
+    val description: String,
+    val prompt: String,
+    val tag: String
+)
+
+@Composable
+private fun ClaudeTemplateCard(
+    template: ClaudeTemplate,
+    onSelect: () -> Unit,
+    isDark: Boolean,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        onClick = onSelect,
+        shape = RoundedCornerShape(14.dp),
+        color = MaterialTheme.colorScheme.surface,
+        border = BorderStroke(
+            1.dp,
+            MaterialTheme.colorScheme.outline.copy(alpha = if (isDark) 0.3f else 0.45f)
+        ),
+        modifier = modifier.testTag("claude_template_${template.id}")
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(13.dp)
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(30.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(GoldPrimary.copy(alpha = if (isDark) 0.16f else 0.12f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = template.icon,
+                        contentDescription = null,
+                        tint = GoldAccent,
+                        modifier = Modifier.size(16.dp)
+                    )
+                }
+
+                Surface(
+                    shape = RoundedCornerShape(6.dp),
+                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
+                ) {
+                    Text(
+                        text = template.tag,
+                        style = MaterialTheme.typography.labelSmall.copy(
+                            fontSize = 9.5.sp,
+                            fontWeight = FontWeight.Medium
+                        ),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            Text(
+                text = template.title,
+                style = MaterialTheme.typography.titleSmall.copy(
+                    fontFamily = JakartaFontFamily,
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 13.5.sp
+                ),
+                color = MaterialTheme.colorScheme.onSurface,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+
+            Spacer(modifier = Modifier.height(3.dp))
+
+            Text(
+                text = template.description,
+                style = MaterialTheme.typography.bodySmall.copy(
+                    fontFamily = JakartaFontFamily,
+                    fontSize = 11.sp,
+                    lineHeight = 15.sp
+                ),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Action row with tap-to-use prompt cue
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(
+                    text = "Use template",
+                    style = MaterialTheme.typography.labelSmall.copy(
+                        fontSize = 10.5.sp,
+                        fontWeight = FontWeight.SemiBold
+                    ),
+                    color = GoldPrimary
+                )
+
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                    contentDescription = "Use template",
+                    tint = GoldPrimary,
+                    modifier = Modifier.size(12.dp)
+                )
+            }
+        }
+    }
+}
+
+/**
+ * The 4 signature starter templates.
+ */
+private fun getClaudeTemplates(): List<ClaudeTemplate> {
+    return listOf(
+        ClaudeTemplate(
+            id = "write_essay",
+            icon = Icons.Default.EditNote,
+            title = "Write an essay",
+            description = "Draft a structured, persuasive essay with thesis and arguments",
+            prompt = "Write a comprehensive, compelling essay on [topic], structured with an engaging introduction, clear thesis, well-substantiated arguments with counterpoints, and an insightful conclusion.",
+            tag = "Essay"
+        ),
+        ClaudeTemplate(
+            id = "do_research",
+            icon = Icons.Default.Search,
+            title = "Do some research",
+            description = "Conduct deep synthesis and literature review on cutting-edge domains",
+            prompt = "Conduct a detailed research breakdown on [subject], highlighting foundational principles, recent breakthroughs, technological trade-offs, and future trajectories.",
+            tag = "Research"
+        ),
+        ClaudeTemplate(
+            id = "create_code",
+            icon = Icons.Default.Code,
+            title = "Create some code",
+            description = "Generate clean, production-grade code with error handling & tests",
+            prompt = "Write clean, idiomatic, production-ready code in Kotlin Jetpack Compose for [feature], including proper state hoisting, M3 styling, and clean architecture.",
+            tag = "Code"
+        ),
+        ClaudeTemplate(
+            id = "brainstorm_ideas",
+            icon = Icons.Default.Lightbulb,
+            title = "Brainstorm ideas",
+            description = "Synthesize innovative concepts, strategic roadmaps, and solutions",
+            prompt = "Brainstorm 5 creative, high-impact approaches to [problem or objective], categorized by technical feasibility, unique value, and strategic advantage.",
+            tag = "Ideas"
+        )
+    )
 }
 
 /**
@@ -393,89 +557,5 @@ fun ClaudeAsterisk(
             radius = petalWidth * 0.42f,
             center = center
         )
-    }
-}
-
-data class ClaudeStarter(
-    val icon: androidx.compose.ui.graphics.vector.ImageVector,
-    val title: String,
-    val description: String,
-    val prompt: String
-)
-
-@Composable
-private fun ClaudeStarterCard(
-    starter: ClaudeStarter,
-    onClick: () -> Unit,
-    isDark: Boolean,
-    modifier: Modifier = Modifier
-) {
-    Surface(
-        onClick = onClick,
-        shape = RoundedCornerShape(14.dp),
-        color = MaterialTheme.colorScheme.surface,
-        border = BorderStroke(
-            1.dp,
-            MaterialTheme.colorScheme.outline.copy(alpha = if (isDark) 0.3f else 0.45f)
-        ),
-        modifier = modifier.testTag("claude_starter_${starter.title.lowercase().replace(" ", "_")}")
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(14.dp)
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(32.dp)
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(GoldPrimary.copy(alpha = if (isDark) 0.15f else 0.12f)),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = starter.icon,
-                    contentDescription = null,
-                    tint = GoldAccent,
-                    modifier = Modifier.size(17.dp)
-                )
-            }
-
-            Spacer(modifier = Modifier.height(10.dp))
-
-            Text(
-                text = starter.title,
-                style = MaterialTheme.typography.titleSmall.copy(
-                    fontFamily = JakartaFontFamily,
-                    fontWeight = FontWeight.SemiBold,
-                    fontSize = 13.5.sp
-                ),
-                color = MaterialTheme.colorScheme.onSurface,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-
-            Spacer(modifier = Modifier.height(3.dp))
-
-            Text(
-                text = starter.description,
-                style = MaterialTheme.typography.bodySmall.copy(
-                    fontFamily = JakartaFontFamily,
-                    fontSize = 11.5.sp,
-                    lineHeight = 15.sp
-                ),
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis
-            )
-        }
-    }
-}
-
-private fun getGreeting(): String {
-    val hour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
-    return when (hour) {
-        in 5..11 -> "Good morning"
-        in 12..17 -> "Good afternoon"
-        else -> "Good evening"
     }
 }

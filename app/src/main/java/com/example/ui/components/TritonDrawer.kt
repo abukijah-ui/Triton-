@@ -129,9 +129,9 @@ fun TritonDrawer(
                             .background(MaterialTheme.colorScheme.surfaceVariant),
                         contentAlignment = Alignment.Center
                     ) {
-                        Text(
-                            text = "🔱",
-                            fontSize = 18.sp
+                        TritonTridentGlyph(
+                            size = 20.dp,
+                            tint = GoldPrimary
                         )
                     }
                 }
@@ -380,7 +380,18 @@ fun TritonDrawer(
                             verticalAlignment = Alignment.CenterVertically,
                             modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp)
                         ) {
-                            Text(text = project.iconEmoji, fontSize = 14.sp)
+                            Box(
+                                modifier = Modifier
+                                    .size(24.dp)
+                                    .clip(RoundedCornerShape(6.dp))
+                                    .background(GoldPrimary.copy(alpha = 0.12f)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                when (project.iconGlyph) {
+                                    "sparkle" -> AureateSparkleGlyph(size = 14.dp, tint = GoldPrimary)
+                                    else -> TritonTridentGlyph(size = 14.dp, tint = GoldPrimary)
+                                }
+                            }
                             Spacer(modifier = Modifier.width(10.dp))
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(

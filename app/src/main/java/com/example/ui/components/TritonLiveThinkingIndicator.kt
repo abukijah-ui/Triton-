@@ -374,18 +374,16 @@ fun TritonLiveThinkingIndicator(
                         // Render previously completed thoughts
                         thinkingState.completedSteps.forEach { step ->
                             Row(
+                                verticalAlignment = Alignment.CenterVertically,
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(vertical = 1.5.dp)
                             ) {
-                                Text(
-                                    text = "✓",
-                                    style = MaterialTheme.typography.bodySmall.copy(
-                                        fontFamily = JetBrainsMonoFontFamily,
-                                        fontSize = 10.5.sp,
-                                        fontWeight = FontWeight.Bold
-                                    ),
-                                    color = Color(0xFF22C55E)
+                                Icon(
+                                    imageVector = Icons.Default.Check,
+                                    contentDescription = null,
+                                    tint = Color(0xFF22C55E),
+                                    modifier = Modifier.size(13.dp)
                                 )
                                 Spacer(modifier = Modifier.width(6.dp))
                                 Text(
@@ -630,7 +628,7 @@ private fun StandardGeneratingIndicator(
                         .border(1.dp, GoldPrimary, CircleShape),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(text = "🔱", fontSize = 11.sp)
+                    TritonTridentGlyph(size = 12.dp, tint = GoldPrimary)
                 }
             }
 

@@ -261,7 +261,7 @@ fun TritonTopBar(
                 }
             }
 
-            // Quick Theme Switcher Button (☀️ / 🌙)
+            // Quick Theme Switcher Button (Light / Dark)
             IconButton(
                 onClick = onToggleDarkTheme,
                 modifier = Modifier.testTag("top_bar_theme_toggle")
