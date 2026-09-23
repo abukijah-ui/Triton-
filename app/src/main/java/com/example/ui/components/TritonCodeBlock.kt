@@ -22,9 +22,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Code
 import androidx.compose.material.icons.filled.ContentCopy
-import androidx.compose.material.icons.filled.OpenInFull
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -45,12 +43,18 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.ui.theme.ClaudeTextPrimaryDark
+import com.example.ui.theme.ClaudeTextPrimaryLight
 import com.example.ui.theme.CodeBgDark
+import com.example.ui.theme.CodeBgLight
+import com.example.ui.theme.CodeHeaderLight
 import com.example.ui.theme.GoldAccent
+import com.example.ui.theme.GoldAmber
 import com.example.ui.theme.GoldHighlight
 import com.example.ui.theme.GoldPrimary
 import com.example.ui.theme.JakartaFontFamily
 import com.example.ui.theme.JetBrainsMonoFontFamily
+import com.example.ui.theme.LocalIsDarkTheme
 import com.example.ui.theme.SyntaxComment
 import com.example.ui.theme.SyntaxFunction
 import com.example.ui.theme.SyntaxKeyword
@@ -66,6 +70,7 @@ fun TritonCodeBlock(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
+    val isDark = LocalIsDarkTheme.current
     var isCopied by remember { mutableStateOf(false) }
 
     LaunchedEffect(isCopied) {
@@ -75,17 +80,17 @@ fun TritonCodeBlock(
         }
     }
 
+    val blockBg = if (isDark) CodeBgDark else CodeBgLight
+    val headerBg = if (isDark) Color(0xFF202026) else CodeHeaderLight
+    val borderColor = if (isDark) GoldPrimary.copy(alpha = 0.28f) else GoldPrimary.copy(alpha = 0.35f)
+
     Surface(
         modifier = modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(12.dp))
-            .border(
-                1.dp,
-                GoldPrimary.copy(alpha = 0.25f),
-                RoundedCornerShape(12.dp)
-            )
+            .border(1.dp, borderColor, RoundedCornerShape(12.dp))
             .testTag("code_block"),
-        color = CodeBgDark,
+        color = blockBg,
         shape = RoundedCornerShape(12.dp)
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
@@ -95,8 +100,8 @@ fun TritonCodeBlock(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(Color(0xFF1E1E24))
-                    .padding(horizontal = 14.dp, vertical = 6.dp)
+                    .background(headerBg)
+                    .padding(horizontal = 14.dp, vertical = 7.dp)
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Box(
@@ -113,19 +118,19 @@ fun TritonCodeBlock(
                             fontSize = 11.sp,
                             letterSpacing = 0.8.sp
                         ),
-                        color = GoldAccent
+                        color = if (isDark) GoldAccent else GoldPrimary
                     )
                 }
 
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     if (onOpenArtifact != null) {
                         Surface(
                             onClick = onOpenArtifact,
                             shape = RoundedCornerShape(6.dp),
-                            color = GoldPrimary.copy(alpha = 0.15f),
+                            color = GoldPrimary.copy(alpha = if (isDark) 0.15f else 0.2f),
                             modifier = Modifier.testTag("open_artifact_code_button")
                         ) {
                             Row(
@@ -135,7 +140,7 @@ fun TritonCodeBlock(
                                 Icon(
                                     imageVector = Icons.Default.Code,
                                     contentDescription = "Artifact",
-                                    tint = GoldHighlight,
+                                    tint = if (isDark) GoldHighlight else GoldAmber,
                                     modifier = Modifier.size(13.dp)
                                 )
                                 Spacer(modifier = Modifier.width(4.dp))
@@ -145,7 +150,7 @@ fun TritonCodeBlock(
                                         fontFamily = JakartaFontFamily,
                                         fontSize = 11.sp
                                     ),
-                                    color = GoldHighlight
+                                    color = if (isDark) GoldHighlight else GoldAmber
                                 )
                             }
                         }
@@ -169,7 +174,7 @@ fun TritonCodeBlock(
                             Icon(
                                 imageVector = if (isCopied) Icons.Default.Check else Icons.Default.ContentCopy,
                                 contentDescription = if (isCopied) "Copied" else "Copy code",
-                                tint = if (isCopied) Color(0xFF4CAF50) else Color(0xFFA6A29A),
+                                tint = if (isCopied) Color(0xFF22C55E) else MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.size(13.dp)
                             )
                             Spacer(modifier = Modifier.width(4.dp))
@@ -179,7 +184,7 @@ fun TritonCodeBlock(
                                     fontFamily = JakartaFontFamily,
                                     fontSize = 11.sp
                                 ),
-                                color = if (isCopied) Color(0xFF4CAF50) else Color(0xFFA6A29A)
+                                color = if (isCopied) Color(0xFF22C55E) else MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                     }
@@ -194,7 +199,7 @@ fun TritonCodeBlock(
                     .padding(horizontal = 14.dp, vertical = 12.dp)
             ) {
                 Text(
-                    text = buildSyntaxHighlightedCode(code, language),
+                    text = buildSyntaxHighlightedCode(code, language, isDark),
                     style = MaterialTheme.typography.bodySmall.copy(
                         fontFamily = JetBrainsMonoFontFamily,
                         fontSize = 12.sp,
@@ -206,7 +211,7 @@ fun TritonCodeBlock(
     }
 }
 
-private fun buildSyntaxHighlightedCode(code: String, language: String) = buildAnnotatedString {
+private fun buildSyntaxHighlightedCode(code: String, language: String, isDark: Boolean) = buildAnnotatedString {
     val lines = code.lines()
     val keywords = setOf(
         "fun", "val", "var", "class", "data", "object", "interface", "import", "package",
@@ -215,10 +220,18 @@ private fun buildSyntaxHighlightedCode(code: String, language: String) = buildAn
         "vec2", "vec3", "vec4", "void", "main", "const", "def", "async", "await", "from"
     )
 
+    val commentColor = if (isDark) SyntaxComment else Color(0xFF706E66)
+    val keywordColor = if (isDark) SyntaxKeyword else Color(0xFFB45309)
+    val stringColor = if (isDark) SyntaxString else Color(0xFF15803D)
+    val numberColor = if (isDark) SyntaxNumber else Color(0xFFC2410C)
+    val typeColor = if (isDark) GoldHighlight else Color(0xFFD97706)
+    val functionColor = if (isDark) SyntaxFunction else Color(0xFF0369A1)
+    val defaultTextColor = if (isDark) ClaudeTextPrimaryDark else ClaudeTextPrimaryLight
+
     lines.forEachIndexed { index, line ->
         val trimmed = line.trimStart()
         if (trimmed.startsWith("//") || trimmed.startsWith("#")) {
-            withStyle(SpanStyle(color = SyntaxComment)) {
+            withStyle(SpanStyle(color = commentColor)) {
                 append(line)
             }
         } else {
@@ -226,32 +239,32 @@ private fun buildSyntaxHighlightedCode(code: String, language: String) = buildAn
             tokens.forEach { token ->
                 when {
                     keywords.contains(token) -> {
-                        withStyle(SpanStyle(color = SyntaxKeyword)) {
+                        withStyle(SpanStyle(color = keywordColor)) {
                             append(token)
                         }
                     }
                     token.startsWith("\"") && token.endsWith("\"") -> {
-                        withStyle(SpanStyle(color = SyntaxString)) {
+                        withStyle(SpanStyle(color = stringColor)) {
                             append(token)
                         }
                     }
                     token.matches(Regex("\\b[0-9]+(\\.[0-9]+)?[fF]?\\b")) -> {
-                        withStyle(SpanStyle(color = SyntaxNumber)) {
+                        withStyle(SpanStyle(color = numberColor)) {
                             append(token)
                         }
                     }
                     token.matches(Regex("[A-Z][a-zA-Z0-9_]+")) -> {
-                        withStyle(SpanStyle(color = GoldHighlight)) {
+                        withStyle(SpanStyle(color = typeColor)) {
                             append(token)
                         }
                     }
                     token.matches(Regex("[a-zA-Z_][a-zA-Z0-9_]*(?=\\()")) -> {
-                        withStyle(SpanStyle(color = SyntaxFunction)) {
+                        withStyle(SpanStyle(color = functionColor)) {
                             append(token)
                         }
                     }
                     else -> {
-                        withStyle(SpanStyle(color = Color(0xFFD6D4CE))) {
+                        withStyle(SpanStyle(color = defaultTextColor)) {
                             append(token)
                         }
                     }

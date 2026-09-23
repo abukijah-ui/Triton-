@@ -24,7 +24,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import com.example.data.TritonRepository
 import com.example.ui.components.TritonArtifactViewer
+import com.example.ui.components.TritonAuthDialog
 import com.example.ui.components.TritonDrawer
+import com.example.ui.components.TritonHistoryDialog
 import com.example.ui.components.TritonSettingsDialog
 import com.example.ui.components.TritonTopBar
 import kotlinx.coroutines.launch
@@ -34,6 +36,7 @@ fun TritonMainScreen(
     repository: TritonRepository,
     isDarkTheme: Boolean,
     onToggleDarkTheme: () -> Unit,
+    onSetDarkTheme: (Boolean) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
@@ -47,8 +50,11 @@ fun TritonMainScreen(
     val activeArtifact by repository.activeArtifact.collectAsState()
     val isGenerating by repository.isGenerating.collectAsState()
     val projects by repository.projects.collectAsState()
+    val currentUser by repository.currentUser.collectAsState()
 
     var showSettingsDialog by remember { mutableStateOf(false) }
+    var showHistoryDialog by remember { mutableStateOf(false) }
+    var showAuthDialog by remember { mutableStateOf(false) }
 
     val currentMessages = currentSessionId?.let { messagesMap[it] } ?: emptyList()
 
@@ -62,6 +68,9 @@ fun TritonMainScreen(
                     sessions = sessions,
                     currentSessionId = currentSessionId,
                     projects = projects,
+                    currentUser = currentUser,
+                    isDarkTheme = isDarkTheme,
+                    onToggleDarkTheme = onToggleDarkTheme,
                     onSelectSession = { sessionId ->
                         repository.selectSession(sessionId)
                         coroutineScope.launch { drawerState.close() }
@@ -79,6 +88,14 @@ fun TritonMainScreen(
                     onOpenSettings = {
                         coroutineScope.launch { drawerState.close() }
                         showSettingsDialog = true
+                    },
+                    onOpenHistory = {
+                        coroutineScope.launch { drawerState.close() }
+                        showHistoryDialog = true
+                    },
+                    onOpenAuth = {
+                        coroutineScope.launch { drawerState.close() }
+                        showAuthDialog = true
                     }
                 )
             }
@@ -104,7 +121,16 @@ fun TritonMainScreen(
                     },
                     onOpenSettings = {
                         showSettingsDialog = true
-                    }
+                    },
+                    onOpenHistory = {
+                        showHistoryDialog = true
+                    },
+                    onOpenAuth = {
+                        showAuthDialog = true
+                    },
+                    isDarkTheme = isDarkTheme,
+                    onToggleDarkTheme = onToggleDarkTheme,
+                    currentUser = currentUser
                 )
             },
             containerColor = MaterialTheme.colorScheme.background,
@@ -164,15 +190,55 @@ fun TritonMainScreen(
                     )
                 }
 
-                // Settings Dialog
+                // Chat History Dialog
+                if (showHistoryDialog) {
+                    TritonHistoryDialog(
+                        sessions = sessions,
+                        currentSessionId = currentSessionId,
+                        onSelectSession = { sessionId ->
+                            repository.selectSession(sessionId)
+                        },
+                        onNewChat = {
+                            repository.createNewSession()
+                        },
+                        onDeleteSession = { sessionId ->
+                            repository.deleteSession(sessionId)
+                        },
+                        onTogglePinSession = { sessionId ->
+                            repository.togglePinSession(sessionId)
+                        },
+                        onDismiss = { showHistoryDialog = false }
+                    )
+                }
+
+                // User Authentication & Profile Dialog
+                if (showAuthDialog) {
+                    TritonAuthDialog(
+                        currentUser = currentUser,
+                        onSignUp = { name, email, password ->
+                            repository.signUp(name, email, password)
+                        },
+                        onLogIn = { email, password ->
+                            repository.logIn(email, password)
+                        },
+                        onLogOut = {
+                            repository.logOut()
+                        },
+                        onDismiss = { showAuthDialog = false }
+                    )
+                }
+
+                // Settings Dialog with Theme Switcher
                 if (showSettingsDialog) {
                     TritonSettingsDialog(
                         isDarkTheme = isDarkTheme,
-                        onToggleDarkTheme = onToggleDarkTheme,
+                        onSetDarkTheme = onSetDarkTheme,
                         selectedModel = selectedModel,
                         onModelSelected = { repository.setModel(it) },
                         isThinkingEnabled = isThinkingEnabled,
                         onToggleThinking = { repository.toggleThinking() },
+                        currentUser = currentUser,
+                        onOpenAuth = { showAuthDialog = true },
                         onDismiss = { showSettingsDialog = false }
                     )
                 }

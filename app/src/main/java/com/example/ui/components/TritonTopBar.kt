@@ -16,13 +16,16 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.MenuOpen
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Code
+import androidx.compose.material.icons.filled.DarkMode
+import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Psychology
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.DropdownMenu
@@ -46,15 +49,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.model.TritonArtifact
 import com.example.model.TritonModel
+import com.example.model.UserProfile
 import com.example.ui.theme.CinzelFontFamily
 import com.example.ui.theme.GoldAccent
 import com.example.ui.theme.GoldAmber
-import com.example.ui.theme.GoldBorderDark
-import com.example.ui.theme.GoldDeep
 import com.example.ui.theme.GoldHighlight
 import com.example.ui.theme.GoldPrimary
 import com.example.ui.theme.JakartaFontFamily
@@ -70,11 +73,15 @@ fun TritonTopBar(
     onOpenDrawer: () -> Unit,
     onNewChat: () -> Unit,
     onOpenSettings: () -> Unit,
+    onOpenHistory: () -> Unit,
+    onOpenAuth: () -> Unit,
+    isDarkTheme: Boolean,
+    onToggleDarkTheme: () -> Unit,
+    currentUser: UserProfile?,
     modifier: Modifier = Modifier
 ) {
     var showModelMenu by remember { mutableStateOf(false) }
     var showOptionsMenu by remember { mutableStateOf(false) }
-    val shimmerBrush = goldShimmerBrush()
 
     TopAppBar(
         modifier = modifier
@@ -115,16 +122,16 @@ fun TritonTopBar(
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.Center,
-                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp)
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
                     ) {
-                        // Gold trident or spark dot
+                        // Gold trident dot
                         Box(
                             modifier = Modifier
                                 .size(8.dp)
                                 .clip(CircleShape)
                                 .background(GoldPrimary)
                         )
-                        Spacer(modifier = Modifier.width(8.dp))
+                        Spacer(modifier = Modifier.width(7.dp))
                         Text(
                             text = selectedModel.displayName,
                             style = MaterialTheme.typography.titleSmall.copy(
@@ -230,7 +237,7 @@ fun TritonTopBar(
             }
         },
         actions = {
-            // Artifact button if available
+            // Artifact button if active
             if (activeArtifact != null) {
                 IconButton(
                     onClick = onOpenArtifact,
@@ -238,7 +245,7 @@ fun TritonTopBar(
                 ) {
                     Box(
                         modifier = Modifier
-                            .size(32.dp)
+                            .size(30.dp)
                             .clip(RoundedCornerShape(8.dp))
                             .border(1.dp, GoldPrimary, RoundedCornerShape(8.dp))
                             .background(GoldPrimary.copy(alpha = 0.15f)),
@@ -248,10 +255,36 @@ fun TritonTopBar(
                             imageVector = Icons.Default.Code,
                             contentDescription = "Open Artifact",
                             tint = GoldAccent,
-                            modifier = Modifier.size(18.dp)
+                            modifier = Modifier.size(17.dp)
                         )
                     }
                 }
+            }
+
+            // Quick Theme Switcher Button (☀️ / 🌙)
+            IconButton(
+                onClick = onToggleDarkTheme,
+                modifier = Modifier.testTag("top_bar_theme_toggle")
+            ) {
+                Icon(
+                    imageVector = if (isDarkTheme) Icons.Default.LightMode else Icons.Default.DarkMode,
+                    contentDescription = if (isDarkTheme) "Switch to Light Mode (Default)" else "Switch to Dark Mode",
+                    tint = if (isDarkTheme) GoldHighlight else GoldAmber,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+
+            // Chat History Button
+            IconButton(
+                onClick = onOpenHistory,
+                modifier = Modifier.testTag("top_bar_history_button")
+            ) {
+                Icon(
+                    imageVector = Icons.Default.History,
+                    contentDescription = "Chat History",
+                    tint = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.size(20.dp)
+                )
             }
 
             // New Chat Button
@@ -262,11 +295,46 @@ fun TritonTopBar(
                 Icon(
                     imageVector = Icons.Default.Add,
                     contentDescription = "Start new chat",
-                    tint = MaterialTheme.colorScheme.onSurface
+                    tint = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.size(22.dp)
                 )
             }
 
-            // More Options
+            // User Profile / Auth Button
+            IconButton(
+                onClick = onOpenAuth,
+                modifier = Modifier.testTag("top_bar_user_button")
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(28.dp)
+                        .clip(CircleShape)
+                        .background(GoldPrimary.copy(alpha = 0.2f))
+                        .border(1.dp, GoldPrimary, CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    if (currentUser != null) {
+                        Text(
+                            text = currentUser.avatarInitials,
+                            style = MaterialTheme.typography.labelSmall.copy(
+                                fontFamily = CinzelFontFamily,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 11.sp
+                            ),
+                            color = GoldAccent
+                        )
+                    } else {
+                        Icon(
+                            imageVector = Icons.Default.Person,
+                            contentDescription = "Account / Sign in",
+                            tint = GoldPrimary,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
+                }
+            }
+
+            // More Options Dropdown
             IconButton(
                 onClick = { showOptionsMenu = true },
                 modifier = Modifier.testTag("more_options_button")
@@ -280,10 +348,47 @@ fun TritonTopBar(
 
             DropdownMenu(
                 expanded = showOptionsMenu,
-                onDismissRequest = { showOptionsMenu = false }
+                onDismissRequest = { showOptionsMenu = false },
+                modifier = Modifier.background(MaterialTheme.colorScheme.surface)
             ) {
                 DropdownMenuItem(
-                    text = { Text("Settings & API Key") },
+                    text = { Text("Chat History") },
+                    leadingIcon = {
+                        Icon(Icons.Default.History, contentDescription = null, tint = GoldPrimary)
+                    },
+                    onClick = {
+                        showOptionsMenu = false
+                        onOpenHistory()
+                    }
+                )
+                DropdownMenuItem(
+                    text = {
+                        Text(if (isDarkTheme) "Switch to Light Mode" else "Switch to Dark Mode")
+                    },
+                    leadingIcon = {
+                        Icon(
+                            if (isDarkTheme) Icons.Default.LightMode else Icons.Default.DarkMode,
+                            contentDescription = null,
+                            tint = GoldAmber
+                        )
+                    },
+                    onClick = {
+                        showOptionsMenu = false
+                        onToggleDarkTheme()
+                    }
+                )
+                DropdownMenuItem(
+                    text = { Text(if (currentUser != null) "User Profile (${currentUser.displayName})" else "Sign In / Sign Up") },
+                    leadingIcon = {
+                        Icon(Icons.Default.Person, contentDescription = null, tint = GoldPrimary)
+                    },
+                    onClick = {
+                        showOptionsMenu = false
+                        onOpenAuth()
+                    }
+                )
+                DropdownMenuItem(
+                    text = { Text("Settings") },
                     leadingIcon = {
                         Icon(Icons.Default.Settings, contentDescription = null, tint = GoldPrimary)
                     },

@@ -21,12 +21,15 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.DeleteOutline
 import androidx.compose.material.icons.filled.Folder
+import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.LightMode
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PushPin
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.PushPin
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -45,14 +48,15 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.model.ChatSession
 import com.example.model.TritonProject
+import com.example.model.UserProfile
 import com.example.ui.theme.CinzelFontFamily
 import com.example.ui.theme.GoldAccent
 import com.example.ui.theme.GoldAmber
-import com.example.ui.theme.GoldDeep
 import com.example.ui.theme.GoldHighlight
 import com.example.ui.theme.GoldPrimary
 import com.example.ui.theme.JakartaFontFamily
@@ -63,11 +67,16 @@ fun TritonDrawer(
     sessions: List<ChatSession>,
     currentSessionId: String?,
     projects: List<TritonProject>,
+    currentUser: UserProfile?,
+    isDarkTheme: Boolean,
+    onToggleDarkTheme: () -> Unit,
     onSelectSession: (String) -> Unit,
     onNewChat: () -> Unit,
     onDeleteSession: (String) -> Unit,
     onTogglePinSession: (String) -> Unit,
     onOpenSettings: () -> Unit,
+    onOpenHistory: () -> Unit,
+    onOpenAuth: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     var searchQuery by remember { mutableStateOf("") }
@@ -104,20 +113,20 @@ fun TritonDrawer(
                     .fillMaxWidth()
                     .padding(horizontal = 4.dp, vertical = 6.dp)
             ) {
-                // Golden geometric trident mark
+                // Golden geometric trident mark with theme-reactive box
                 Box(
                     modifier = Modifier
-                        .size(34.dp)
+                        .size(36.dp)
                         .clip(RoundedCornerShape(9.dp))
                         .background(shimmerBrush)
-                        .padding(1.dp)
+                        .padding(1.2.dp)
                 ) {
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
                             .fillMaxHeight()
                             .clip(RoundedCornerShape(8.dp))
-                            .background(Color(0xFF141416)),
+                            .background(MaterialTheme.colorScheme.surfaceVariant),
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
@@ -151,7 +160,7 @@ fun TritonDrawer(
                 }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(14.dp))
 
             // Start New Chat Pill Button with Shimmering Gold Border
             Surface(
@@ -185,7 +194,60 @@ fun TritonDrawer(
                 }
             }
 
-            Spacer(modifier = Modifier.height(14.dp))
+            Spacer(modifier = Modifier.height(10.dp))
+
+            // Chat History Access Button
+            Surface(
+                onClick = onOpenHistory,
+                shape = RoundedCornerShape(10.dp),
+                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
+                border = androidx.compose.foundation.BorderStroke(
+                    0.8.dp,
+                    MaterialTheme.colorScheme.outline.copy(alpha = 0.35f)
+                ),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag("drawer_all_history_button")
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.History,
+                        contentDescription = null,
+                        tint = GoldAccent,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "View Chat History",
+                        style = MaterialTheme.typography.bodyMedium.copy(
+                            fontFamily = JakartaFontFamily,
+                            fontSize = 12.5.sp
+                        ),
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Spacer(modifier = Modifier.weight(1f))
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(6.dp))
+                            .background(GoldPrimary.copy(alpha = 0.15f))
+                            .padding(horizontal = 6.dp, vertical = 2.dp)
+                    ) {
+                        Text(
+                            text = "${sessions.size}",
+                            style = MaterialTheme.typography.labelSmall.copy(
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold
+                            ),
+                            color = GoldPrimary
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
 
             // Search Bar
             Surface(
@@ -345,7 +407,7 @@ fun TritonDrawer(
                 modifier = Modifier.padding(vertical = 10.dp)
             )
 
-            // Bottom Profile & Triton Pro Badge
+            // Bottom Profile & Theme / Settings Actions
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -353,73 +415,100 @@ fun TritonDrawer(
                     .fillMaxWidth()
                     .padding(horizontal = 4.dp)
             ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
+                // User Profile clickable card
+                Surface(
+                    onClick = onOpenAuth,
+                    shape = RoundedCornerShape(10.dp),
+                    color = Color.Transparent,
                     modifier = Modifier.weight(1f)
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .size(34.dp)
-                            .clip(CircleShape)
-                            .border(1.2.dp, GoldPrimary, CircleShape)
-                            .background(GoldPrimary.copy(alpha = 0.2f)),
-                        contentAlignment = Alignment.Center
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.padding(vertical = 4.dp)
                     ) {
-                        Text(
-                            text = "T",
-                            style = MaterialTheme.typography.titleMedium.copy(
-                                fontFamily = CinzelFontFamily,
-                                fontSize = 15.sp
-                            ),
-                            color = GoldAccent
-                        )
-                    }
-                    Spacer(modifier = Modifier.width(10.dp))
-                    Column {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(
+                            modifier = Modifier
+                                .size(34.dp)
+                                .clip(CircleShape)
+                                .border(1.2.dp, GoldPrimary, CircleShape)
+                                .background(GoldPrimary.copy(alpha = 0.2f)),
+                            contentAlignment = Alignment.Center
+                        ) {
                             Text(
-                                text = "Voyager",
-                                style = MaterialTheme.typography.titleSmall.copy(
-                                    fontFamily = JakartaFontFamily,
-                                    fontSize = 13.sp
+                                text = currentUser?.avatarInitials ?: "T",
+                                style = MaterialTheme.typography.titleMedium.copy(
+                                    fontFamily = CinzelFontFamily,
+                                    fontSize = 14.sp
                                 ),
-                                color = MaterialTheme.colorScheme.onSurface
+                                color = GoldAccent
                             )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            // Gold Pro badge
-                            Box(
-                                modifier = Modifier
-                                    .clip(RoundedCornerShape(4.dp))
-                                    .background(GoldPrimary)
-                                    .padding(horizontal = 4.dp, vertical = 1.dp)
-                            ) {
-                                Text(
-                                    text = "PRO",
-                                    style = MaterialTheme.typography.labelSmall.copy(
-                                        fontSize = 9.sp,
-                                        fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
-                                    ),
-                                    color = Color.Black
-                                )
-                            }
                         }
-                        Text(
-                            text = "Triton 3.7 Tier",
-                            style = MaterialTheme.typography.bodySmall.copy(fontSize = 10.5.sp),
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Column {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    text = currentUser?.displayName ?: "Voyager",
+                                    style = MaterialTheme.typography.titleSmall.copy(
+                                        fontFamily = JakartaFontFamily,
+                                        fontSize = 13.sp,
+                                        fontWeight = FontWeight.SemiBold
+                                    ),
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                // Gold Pro badge
+                                Box(
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(4.dp))
+                                        .background(GoldPrimary)
+                                        .padding(horizontal = 4.dp, vertical = 1.dp)
+                                ) {
+                                    Text(
+                                        text = currentUser?.tier?.uppercase() ?: "PRO",
+                                        style = MaterialTheme.typography.labelSmall.copy(
+                                            fontSize = 9.sp,
+                                            fontWeight = FontWeight.Bold
+                                        ),
+                                        color = Color.Black
+                                    )
+                                }
+                            }
+                            Text(
+                                text = currentUser?.email ?: "Triton 3.7 Tier",
+                                style = MaterialTheme.typography.bodySmall.copy(fontSize = 10.5.sp),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 1
+                            )
+                        }
                     }
                 }
 
-                IconButton(
-                    onClick = onOpenSettings,
-                    modifier = Modifier.testTag("drawer_settings_button")
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Settings,
-                        contentDescription = "Settings",
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    // Quick theme switcher button
+                    IconButton(
+                        onClick = onToggleDarkTheme,
+                        modifier = Modifier.size(32.dp).testTag("drawer_theme_toggle")
+                    ) {
+                        Icon(
+                            imageVector = if (isDarkTheme) Icons.Default.LightMode else Icons.Default.DarkMode,
+                            contentDescription = "Toggle theme",
+                            tint = if (isDarkTheme) GoldHighlight else GoldAmber,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+
+                    // Settings button
+                    IconButton(
+                        onClick = onOpenSettings,
+                        modifier = Modifier.size(32.dp).testTag("drawer_settings_button")
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Settings,
+                            contentDescription = "Settings",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
                 }
             }
         }
@@ -454,7 +543,7 @@ private fun DrawerSessionItem(
                     style = MaterialTheme.typography.bodyMedium.copy(
                         fontFamily = JakartaFontFamily,
                         fontSize = 13.sp,
-                        fontWeight = if (isSelected) androidx.compose.ui.text.font.FontWeight.SemiBold else androidx.compose.ui.text.font.FontWeight.Normal
+                        fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal
                     ),
                     maxLines = 1,
                     color = if (isSelected) GoldPrimary else MaterialTheme.colorScheme.onSurface

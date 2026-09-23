@@ -19,7 +19,7 @@ val GoldBorderLight = Color(0x33D4AF37)
 val GoldBorderDark = Color(0x4DD4AF37)
 val GoldBorderShimmer = Color(0x80FFE680)
 
-// Claude Light Surfaces (Parchment & Ivory)
+// Claude Light Surfaces (Parchment & Ivory - Default)
 val ClaudeBgLight = Color(0xFFFAF9F5)           // Claude's warm ivory canvas
 val ClaudeSurfaceLight = Color(0xFFFFFFFF)      // Pure card / composer background
 val ClaudeSurfaceVariantLight = Color(0xFFF3EFE6)// Subtle card / hover background
@@ -28,20 +28,28 @@ val ClaudeTextPrimaryLight = Color(0xFF1D1B18)  // Deep espresso text
 val ClaudeTextSecondaryLight = Color(0xFF6B665E)// Warm grey text
 val ClaudeTextTertiaryLight = Color(0xFF9E998F) // Muted subtle text
 
-// Claude Dark Surfaces (Velvet Obsidian & Zinc)
-val ClaudeBgDark = Color(0xFF141416)            // Deep charcoal slate
-val ClaudeSurfaceDark = Color(0xFF1E1E22)       // Elevated card / composer
-val ClaudeSurfaceVariantDark = Color(0xFF28282E)// Secondary pill / sidebar hover
-val ClaudeBorderDark = Color(0xFF2E2E36)        // Subtle dark border
-val ClaudeTextPrimaryDark = Color(0xFFF5F3EF)   // Bright warm white
-val ClaudeTextSecondaryDark = Color(0xFFA6A29A) // Neutral silver grey
-val ClaudeTextTertiaryDark = Color(0xFF706D67)  // Dim grey text
+// Claude Dark Surfaces (Dark Grey with lighter text for accessibility)
+val ClaudeBgDark = Color(0xFF18181B)            // Dark grey slate background (Zinc-900)
+val ClaudeSurfaceDark = Color(0xFF242428)       // Elevated dark grey surface
+val ClaudeSurfaceVariantDark = Color(0xFF2E2E34)// Secondary dark grey container
+val ClaudeBorderDark = Color(0xFF3F3F46)        // Accessible dark grey border
+val ClaudeTextPrimaryDark = Color(0xFFF4F4F5)   // High-contrast crisp light text (Zinc-100)
+val ClaudeTextSecondaryDark = Color(0xFFA1A1AA) // Lighter silver-grey text (Zinc-400)
+val ClaudeTextTertiaryDark = Color(0xFF71717A)  // Muted accessible text (Zinc-500)
 
 // Code Block Syntax Colors
-val CodeBgLight = Color(0xFFF7F5F0)
-val CodeBgDark = Color(0xFF121215)
-val SyntaxKeyword = Color(0xFFE5A93C)
-val SyntaxString = Color(0xFF86B300)
-val SyntaxFunction = Color(0xFF55B5DB)
-val SyntaxComment = Color(0xFF7C828D)
-val SyntaxNumber = Color(0xFFFF8F40)
+val CodeBgLight = Color(0xFFF6F4EE)             // Light mode code block background
+val CodeHeaderLight = Color(0xFFECE7DE)         // Light mode code header
+val CodeBgDark = Color(0xFF131316)              // Dark mode code block background
+val CodeHeaderDark = Color(0xFF202026)          // Dark mode code header
+
+val SyntaxKeyword = Color(0xFFD97706)           // Warm amber
+val SyntaxString = Color(0xFF16A34A)            // Accessible emerald green
+val SyntaxFunction = Color(0xFF2563EB)          // Vibrant blue
+val SyntaxComment = Color(0xFF6B7280)           // Neutral grey comment
+val SyntaxNumber = Color(0xFFEA580C)            // Rich orange
+val SyntaxKeywordDark = Color(0xFFF59E0B)       // Bright gold keyword
+val SyntaxStringDark = Color(0xFF86EFAC)        // Pastel mint string
+val SyntaxFunctionDark = Color(0xFF60A5FA)      // Light sky blue
+val SyntaxCommentDark = Color(0xFF9CA3AF)       // Accessible light comment
+val SyntaxNumberDark = Color(0xFFFDBA74)        // Warm peach

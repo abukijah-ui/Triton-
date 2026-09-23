@@ -1,15 +1,23 @@
 package com.example.ui.theme
 
 import android.app.Activity
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
+
+enum class TritonThemeMode(val displayName: String, val description: String) {
+    LIGHT("Shimmering Gold (Light)", "Warm parchment ivory with radiant gold accents (Default)"),
+    DARK("Dark Mode", "Dark grey canvas with high-contrast lighter text for accessibility")
+}
+
+val LocalIsDarkTheme = staticCompositionLocalOf { false }
 
 private val DarkColorScheme = darkColorScheme(
     primary = GoldAccent,
@@ -53,7 +61,7 @@ private val LightColorScheme = lightColorScheme(
 
 @Composable
 fun TritonTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
+    darkTheme: Boolean = false, // Default is Light Mode!
     content: @Composable () -> Unit
 ) {
     val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme
@@ -72,17 +80,19 @@ fun TritonTheme(
         }
     }
 
-    MaterialTheme(
-        colorScheme = colorScheme,
-        typography = Typography,
-        content = content
-    )
+    CompositionLocalProvider(LocalIsDarkTheme provides darkTheme) {
+        MaterialTheme(
+            colorScheme = colorScheme,
+            typography = Typography,
+            content = content
+        )
+    }
 }
 
-// Keep backwards-compatibility alias for template
+// Backwards-compatibility alias for template
 @Composable
 fun MyApplicationTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
+    darkTheme: Boolean = false,
     dynamicColor: Boolean = false,
     content: @Composable () -> Unit
 ) {

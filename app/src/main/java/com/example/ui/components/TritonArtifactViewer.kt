@@ -30,10 +30,7 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Code
 import androidx.compose.material.icons.filled.ContentCopy
-import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Visibility
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -66,13 +63,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.model.TritonArtifact
 import com.example.ui.theme.CinzelFontFamily
-import com.example.ui.theme.CodeBgDark
 import com.example.ui.theme.GoldAccent
 import com.example.ui.theme.GoldAmber
 import com.example.ui.theme.GoldHighlight
 import com.example.ui.theme.GoldPrimary
 import com.example.ui.theme.JakartaFontFamily
 import com.example.ui.theme.JetBrainsMonoFontFamily
+import com.example.ui.theme.LocalIsDarkTheme
 import kotlinx.coroutines.delay
 import kotlin.math.cos
 import kotlin.math.sin
@@ -85,6 +82,7 @@ fun TritonArtifactViewer(
 ) {
     var selectedTab by remember { mutableIntStateOf(0) } // 0: Preview, 1: Code
     val context = LocalContext.current
+    val isDark = LocalIsDarkTheme.current
     var isCopied by remember { mutableStateOf(false) }
 
     LaunchedEffect(isCopied) {
@@ -171,7 +169,7 @@ fun TritonArtifactViewer(
                         Icon(
                             imageVector = if (isCopied) Icons.Default.Check else Icons.Default.ContentCopy,
                             contentDescription = "Copy code",
-                            tint = if (isCopied) Color(0xFF4CAF50) else MaterialTheme.colorScheme.onSurfaceVariant
+                            tint = if (isCopied) Color(0xFF22C55E) else MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
 
@@ -250,7 +248,7 @@ fun TritonArtifactViewer(
                     .weight(1f)
             ) {
                 if (selectedTab == 0) {
-                    ArtifactInteractivePreview(artifact = artifact)
+                    ArtifactInteractivePreview(artifact = artifact, isDark = isDark)
                 } else {
                     Box(modifier = Modifier.padding(16.dp)) {
                         TritonCodeBlock(
@@ -265,7 +263,7 @@ fun TritonArtifactViewer(
 }
 
 @Composable
-private fun ArtifactInteractivePreview(artifact: TritonArtifact) {
+private fun ArtifactInteractivePreview(artifact: TritonArtifact, isDark: Boolean) {
     var particleIntensity by remember { mutableFloatStateOf(0.7f) }
     var shimmerFrequency by remember { mutableFloatStateOf(1.2f) }
 
@@ -280,17 +278,19 @@ private fun ArtifactInteractivePreview(artifact: TritonArtifact) {
         label = "time_anim"
     )
 
+    val canvasSurfaceColor = if (isDark) Color(0xFF141417) else Color(0xFFF7F5EE)
+
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(CodeBgDark)
+            .background(MaterialTheme.colorScheme.background)
             .padding(16.dp)
     ) {
         // Visualizer Canvas representing Triton's real-time rendering
         Surface(
             shape = RoundedCornerShape(16.dp),
-            color = Color(0xFF0F0F12),
-            border = androidx.compose.foundation.BorderStroke(1.dp, GoldPrimary.copy(alpha = 0.4f)),
+            color = canvasSurfaceColor,
+            border = androidx.compose.foundation.BorderStroke(1.2.dp, GoldPrimary.copy(alpha = if (isDark) 0.4f else 0.5f)),
             modifier = Modifier
                 .fillMaxWidth()
                 .weight(1f)
@@ -321,12 +321,12 @@ private fun ArtifactInteractivePreview(artifact: TritonArtifact) {
 
                     // Shimmering Golden Core
                     drawCircle(
-                        color = GoldPrimary.copy(alpha = 0.15f),
+                        color = GoldPrimary.copy(alpha = if (isDark) 0.15f else 0.25f),
                         radius = baseRadius * 0.7f,
                         center = center
                     )
                     drawCircle(
-                        color = GoldAccent.copy(alpha = 0.8f),
+                        color = if (isDark) GoldAccent.copy(alpha = 0.8f) else GoldAmber.copy(alpha = 0.9f),
                         radius = baseRadius * 0.5f,
                         center = center,
                         style = Stroke(width = 2.5f)
@@ -344,7 +344,7 @@ private fun ArtifactInteractivePreview(artifact: TritonArtifact) {
                             letterSpacing = 1.5.sp,
                             fontSize = 11.sp
                         ),
-                        color = GoldHighlight
+                        color = if (isDark) GoldHighlight else GoldAmber
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(

@@ -112,3 +112,13 @@ data class PromptSuggestion(
     val title: String,
     val promptText: String
 )
+
+data class UserProfile(
+    val id: String,
+    val email: String,
+    val displayName: String,
+    val tier: String = "Triton Pro",
+    val avatarInitials: String = "TR",
+    val createdAt: Long = System.currentTimeMillis()
+)
+

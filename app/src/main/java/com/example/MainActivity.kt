@@ -4,7 +4,6 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -24,14 +23,15 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            val systemDark = isSystemInDarkTheme()
-            var isDarkTheme by remember { mutableStateOf(systemDark) }
+            // Light mode is the default as requested
+            var isDarkTheme by remember { mutableStateOf(false) }
 
             TritonTheme(darkTheme = isDarkTheme) {
                 TritonMainScreen(
                     repository = repository,
                     isDarkTheme = isDarkTheme,
                     onToggleDarkTheme = { isDarkTheme = !isDarkTheme },
+                    onSetDarkTheme = { isDarkTheme = it },
                     modifier = Modifier.fillMaxSize()
                 )
             }
